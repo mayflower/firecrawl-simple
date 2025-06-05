@@ -212,6 +212,7 @@ export type CrawlStatusResponse =
       expiresAt: string;
       next?: string;
       data: Document[];
+      creditsUsed: number;
     };
 
 type AuthObject = {

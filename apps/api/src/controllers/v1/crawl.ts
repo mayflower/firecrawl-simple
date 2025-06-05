@@ -90,6 +90,7 @@ export async function crawlController(
   req: RequestWithAuth<{}, CrawlResponse, CrawlRequest>,
   res: Response<CrawlResponse>
 ) {
+  Logger.info(`[Crawl] /v1/crawl endpoint called with body: ${JSON.stringify(req.body)}`);
   req.body = crawlRequestSchema.parse(req.body);
 
   Logger.debug(`[Crawl] Request: ${JSON.stringify(req.body)}`);
