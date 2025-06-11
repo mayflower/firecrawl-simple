@@ -11,7 +11,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "types": ["node"],
     "baseUrl": ".",
     "paths": {
       "@ulixee/*": ["node_modules/@ulixee/*"]

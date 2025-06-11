@@ -108,6 +108,7 @@ const workerFun = async (
 
     const job = await worker.getNextJob(token);
     if (job) {
+      Logger.info(`[QueueWorker] Worker ${process.pid} received job ${job.id} for URL: ${job.data.url} (Crawl ID: ${job.data.crawl_id})`);
       processJobInternal(token, job);
 
       await sleep(gotJobInterval);
@@ -120,7 +121,7 @@ const workerFun = async (
 workerFun(scrapeQueueName, processJobInternal);
 
 async function processJob(job: Job, token: string) {
-  Logger.info(`🐂 Worker taking job ${job.id}`);
+  Logger.info(`🐂 Worker ${process.pid} taking job ${job.id} for URL: ${job.data.url} (Crawl ID: ${job.data.crawl_id})`);
 
   if (
     job.data.url &&

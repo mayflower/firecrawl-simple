@@ -61,12 +61,17 @@ const scrape = async (
       "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/109.0",
     upstreamProxyUrl: proxy_url,
     upstreamProxyUseLocalDns: true,
+    // Enable stealth mode features
+    blockedResourceTypes: ['BlockCssResources', 'BlockFonts', 'BlockImages'],
+    showChrome: false,
   });
 
   const tab = heroInstance.activeTab;
 
   if (proxy_url) {
-    console.log(`Using proxy: ${proxy_url}`);
+    console.log(`🥷 Using proxy with stealth mode: ${proxy_url}`);
+  } else {
+    console.log(`🥷 Stealth mode enabled (no proxy)`);
   }
 
   if (headers) {
@@ -103,12 +108,55 @@ const scrape = async (
     await tab.waitForMillis(wait_after_load);
   }
 
-  // Get the page content
+  // For JavaScript-heavy sites, wait for network to be idle and DOM to stabilize
+  console.log(`🔄 Waiting for JavaScript to render content...`);
+  
+  // Wait for network to be mostly idle (no requests for 500ms)
+  await tab.waitForLoad('DomContentLoaded');
+  
+  // Additional wait for dynamic content to load
+  await tab.waitForMillis(2000);
+  
+  // Wait for any remaining network activity to settle
+  try {
+    await tab.waitForLoad('AllContentLoaded', { timeoutMs: 10000 });
+  } catch (e) {
+    console.log(`⚠️ AllContentLoaded timeout, proceeding with current content`);
+  }
+
+  // Evaluate in-page DOM state before extracting innerHTML
+  try {
+    // Use tab.getJsValue to get the count of 'a' elements
+    const linkCountInDom = await tab.getJsValue<number>(`document.querySelectorAll('a').length`);
+    console.log(`🔗 DOM_LINK_COUNT_VIA_GETJSVALUE: ${linkCountInDom}`);
+    
+    if (linkCountInDom > 0) {
+      // Attempt to get a few sample links. Note: getJsValue might be limited for complex objects.
+      // This is an attempt; if it fails, we'll at least have the count.
+      try {
+        const sampleLinks = await tab.getJsValue<Array<{ href: string; text: string }>>(
+          `Array.from(document.querySelectorAll('a')).slice(0, 5).map(a => ({ href: a.href, text: a.innerText.substring(0,100) }))`
+        );
+        console.log(`🔗 SAMPLE_LINKS_VIA_GETJSVALUE: ${JSON.stringify(sampleLinks, null, 2)}`);
+      } catch (sampleLinksError) {
+        const sampleErrorMsg = sampleLinksError instanceof Error ? sampleLinksError.message : String(sampleLinksError);
+        console.warn(`⚠️  COULD_NOT_GET_SAMPLE_LINKS_VIA_GETJSVALUE: ${sampleErrorMsg}`);
+      }
+    }
+
+  } catch (evalError) {
+    const evalErrorMessage = evalError instanceof Error ? evalError.message : String(evalError);
+    console.error(`❌ ERROR_DURING_PAGE_EVAL: ${evalErrorMessage}`);
+  }
+
+  // Get the page content after JavaScript execution
   const documentElement = await tab.document.documentElement;
   const pageContent = await documentElement.innerHTML;
   if (!pageContent) {
     throw new Error("Failed to get page content");
   }
+
+  console.log(`✅ Extracted ${pageContent.length} characters of JavaScript-rendered content`);
 
   heroInstance.close().catch(console.error);
 

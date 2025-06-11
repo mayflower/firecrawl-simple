@@ -1,4 +1,6 @@
 import axios from "axios";
+import { wrapper } from "axios-cookiejar-support";
+import { CookieJar } from "tough-cookie";
 import { universalTimeout } from "../global";
 import { Logger } from "../../../lib/logger";
 

@@ -31,21 +31,42 @@ export async function scrapeWithPlaywright(
     const reqParams = await generateRequestParams(url);
     const waitParam = reqParams["params"]?.wait ?? waitFor;
 
-    const response = await axios.post(
-      process.env.PLAYWRIGHT_MICROSERVICE_URL,
-      {
-        url: url,
-        wait_after_load: waitParam,
-        headers: headers,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: universalTimeout + waitParam,
-        transformResponse: [(data) => data],
-      }
-    );
+    const serviceUrl = process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    const payload = {
+      url: url,
+      wait_after_load: waitParam,
+      headers: headers,
+    };
+
+    Logger.info(`[scrapeWithPlaywright] Calling puppeteer-service at: ${serviceUrl} for URL: ${url}`);
+    Logger.debug(`[scrapeWithPlaywright] Payload sent to puppeteer-service: ${JSON.stringify(payload)}`);
+
+    let response;
+    try {
+      Logger.debug(`[scrapeWithPlaywright] Attempting axios.post to ${serviceUrl} with payload: ${JSON.stringify(payload)}`);
+      response = await axios.post(
+        serviceUrl,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: universalTimeout + waitParam,
+          transformResponse: [(data) => data],
+        }
+      );
+      Logger.info(`[scrapeWithPlaywright] axios.post to ${serviceUrl} for ${url} completed with status: ${response.status}`);
+    } catch (axiosError) {
+      logParams.error_message = axiosError.message || String(axiosError);
+      logParams.response_code = axiosError.response?.status;
+      const detailedAxiosError = `[scrapeWithPlaywright] axios.post to ${serviceUrl} for ${url} FAILED. Error: ${axiosError.message}. Code: ${axiosError.code}. Request URL: ${serviceUrl}. Request Payload: ${JSON.stringify(payload)}. Response Status: ${axiosError.response?.status}. Response Data: ${JSON.stringify(axiosError.response?.data)}`;
+      Logger.error(detailedAxiosError);
+      return {
+        content: "",
+        pageStatusCode: axiosError.response?.status || null,
+        pageError: logParams.error_message,
+      };
+    }
 
     if (response.status !== 200) {
       Logger.debug(
@@ -61,6 +82,7 @@ export async function scrapeWithPlaywright(
     }
 
     const textData = response.data;
+    Logger.debug(`[scrapeWithPlaywright] Raw response from puppeteer-service for ${url}: ${textData.substring(0, 500)}...`); // Log first 500 chars
     try {
       const data = JSON.parse(textData);
       const html = data.content;

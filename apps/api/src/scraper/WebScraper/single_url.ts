@@ -160,6 +160,8 @@ export async function scrapeSingleUrl(
     switch (method) {
       case "playwright":
         if (process.env.PLAYWRIGHT_MICROSERVICE_URL) {
+          Logger.info(`[scrapeSingleUrl] Attempting scrapeWithPlaywright for URL: ${url}`);
+          Logger.debug(`[scrapeSingleUrl] Playwright pageOptions.waitFor: ${pageOptions.waitFor}, headers: ${JSON.stringify(pageOptions.headers)}`);
           const response = await scrapeWithPlaywright(
             url,
             pageOptions.waitFor,

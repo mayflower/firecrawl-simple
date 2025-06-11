@@ -74,6 +74,10 @@ export async function runWebScraper({
   is_scrape = false,
 }: RunWebScraperParams): Promise<RunWebScraperResult> {
   try {
+    Logger.info(`[runWebScraper] Starting for URL: ${url}, Mode: ${mode}, Job ID: ${bull_job_id}, Crawl ID: ${crawl_id}`);
+    Logger.debug(`[runWebScraper] CrawlerOptions: ${JSON.stringify(crawlerOptions)}`);
+    Logger.debug(`[runWebScraper] PageOptions: ${JSON.stringify(pageOptions)}`);
+
     const provider = new WebScraperDataProvider();
     if (mode === "crawl") {
       provider.setOptions({

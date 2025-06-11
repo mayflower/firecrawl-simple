@@ -45,7 +45,8 @@ export class WebScraperDataProvider {
       await Promise.all(
         batchUrls.map(async (url, index) => {
           const existingHTML = allHtmls ? allHtmls[i + index] : "";
-          Logger.info(`Scraping URL: ${url} for crawlId: ${this.crawlId}`);
+          Logger.info(`[WebScraperDataProvider] Scraping URL: ${url} for crawlId: ${this.crawlId} (Job ID: ${this.jobId})`);
+          Logger.debug(`[WebScraperDataProvider] PageOptions for ${url}: ${JSON.stringify(this.pageOptions)}`);
           const result = await scrapeSingleUrl(
             url,
             this.pageOptions,
